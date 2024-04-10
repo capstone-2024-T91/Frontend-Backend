@@ -38,7 +38,7 @@ sudo systemctl enable flask_app
 
 ## Access our Backend service: 
 Simply visit our EC2's public IP: https://3.14.250.99/
-<br> Update: Stoped the AWS EC2 instance to save resources. The backend can still be run locally.
+<br> Update: Stopped the AWS EC2 instance to save resources. The backend can still be run locally.
 
 ## Additional Resources
 - [Flask Documentation](https://flask.palletsprojects.com/en/2.1.x/)
