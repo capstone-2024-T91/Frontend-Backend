@@ -34,6 +34,8 @@ sudo systemctl enable flask_app
 
 9. **Configure Nginx**: Created a server block configuration file for Flask application in Nginx.
 
+## Architecture
+<img width="601" alt="image" src="https://github.com/user-attachments/assets/43378fd3-c000-4cd0-90ba-45d772a36af0">
 
 
 ## Access our Backend service: 
