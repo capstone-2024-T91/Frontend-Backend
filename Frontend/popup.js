@@ -42,6 +42,25 @@ document.addEventListener("DOMContentLoaded", function () {
       chrome.tabs.sendMessage(tabs[0].id, { action: "readText" });
     });
   });
+    
+  // Get the dropdown element
+  const modelSelect = document.getElementById("modelSelect");
+
+  // Load the previously selected model from chrome.storage
+  chrome.storage.sync.get("selectedModel", function (data) {
+    if (data.selectedModel) {
+      modelSelect.value = data.selectedModel; // Set the dropdown to the previously selected model
+    }
+  });
+
+  // Store the selected model whenever the user changes the dropdown
+  modelSelect.addEventListener("change", function () {
+    const selectedModel = modelSelect.value;
+    chrome.storage.sync.set({ selectedModel: selectedModel }, function () {
+      console.log("Selected model saved:", selectedModel);
+    });
+  });
+
 });
 
 // This function below is to keep checking if an email is displayed in the page, and to append a button to it.
@@ -86,8 +105,6 @@ function observeDOM() {
 
 // Function to add your button
 function addButtonToInterface() {
-
-  // Creating the main button
   var sortButton = document.createElement("button");
   sortButton.textContent = "Phishing Risk?";
   // Styles
@@ -140,53 +157,54 @@ function addButtonToInterface() {
       loadingButton.style.animationFillMode = "forwards";
       loadingButton.textContent = "loading...";
       sortContainer.appendChild(loadingButton);
+      // Get the selected model from chrome.storage
+      chrome.storage.sync.get("selectedModel", function (data) {
+        const selectedModel = data.selectedModel || "ModelA"; // Default to "ModelA" if no model is selected
 
-
-      // Request data with the email body
-      const formData = new FormData();
-      formData.append("experience", document.querySelector(".a3s").textContent);
-
-      // Post request
-      fetch("https://3.14.250.99/", {
-        method: "POST",
-        body: formData,
-      })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error("Network response was not ok");
-          }
-          return response.text();
+        const formData = new FormData();
+        formData.append("experience", document.querySelector(".a3s").textContent);
+        formData.append("model", selectedModel); // Include the selected model in the request
+        fetch("https://3.14.250.99/", {
+          method: "POST",
+          body: formData,
         })
-        .then((data) => {
-          // Removing the loading button 
-          loadingButton.style.display = "None";
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Network response was not ok");
+            }
+            return response.text();
+          })
+          .then((data) => {
+            // Removing the loading button 
+            loadingButton.style.display = "None";
 
-          // Displaying the result
-          sortContainer.appendChild(resultButton);
+            // Displaying the result
+            sortContainer.appendChild(resultButton);
 
-          // Parsing data
-          let parsed = parser(data);
+             // Parsing data
+            let parsed = parser(data);
 
-          // Finding the consensus
-          let consensus = classifyEmail(parsed);
+            // Finding the consensus
+            let consensus = classifyEmail(parsed);
 
-          // Displaying the result
-          if (consensus.classification == "Danger") {
-            resultButton.textContent = "High, Risk estimate : " + consensus.averageCertainty.toPrecision(2) + "%";
-            resultButton.style.backgroundColor = "rgb(242,28,28)";
-          }
-          if (consensus.classification == "Moderate") {
-            resultButton.style.backgroundColor = "rgb(242,156,28)";
-            resultButton.textContent = "Moderate, Risk estimate : " + consensus.averageCertainty.toPrecision(2) + "%";
-          }
-          if (consensus.classification == "Safe") {
-            resultButton.textContent = "Low, Safety estimate : " + consensus.averageCertainty.toPrecision(2) + "%";
-            resultButton.style.backgroundColor = "rgb(7,138,68)";
-          }
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-        });
+            // Displaying the result
+            if (consensus.classification == "Danger") {
+              resultButton.textContent = "High, Risk estimate : " + consensus.averageCertainty.toPrecision(2) + "%";
+              resultButton.style.backgroundColor = "rgb(242,28,28)";
+            }
+            if (consensus.classification == "Moderate") {
+              resultButton.style.backgroundColor = "rgb(242,156,28)";
+              resultButton.textContent = "Moderate, Risk estimate : " + consensus.averageCertainty.toPrecision(2) + "%";
+            }
+            if (consensus.classification == "Safe") {
+              resultButton.textContent = "Low, Safety estimate : " + consensus.averageCertainty.toPrecision(2) + "%";
+              resultButton.style.backgroundColor = "rgb(7,138,68)";
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      });
     });
   } else {
     // If the target element doesn't exist yet, keep observing the DOM
