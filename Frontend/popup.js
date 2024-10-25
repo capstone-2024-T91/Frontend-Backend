@@ -28,7 +28,6 @@ const keyframes = `
   }
 `;
 const addKeyframesToDOM = () => {
-  console.log("add keyframes to DOM");
   const styleElement = document.createElement("style");
   styleElement.innerHTML = keyframes;
   document.head.appendChild(styleElement);
@@ -55,17 +54,17 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // Function to check if an email is displayed on the screen
-const isEmailOnScreen = () => {
+export const isEmailOnScreen = () => {
   return document.querySelector("td.c2") !== null;
 };
 
 // Function to read the email content
-const readEmailContent = () => {
+export const readEmailContent = () => {
   return document.querySelector(".a3s").textContent;
 };
 
 // Function to send email content to the phishing detection model
-const sendEmailForAnalysis = async (emailContent) => {
+export const sendEmailForAnalysis = async (emailContent) => {
   return new Promise((resolve) => {
     chrome.storage.sync.get("selectedModel", function (data) {
       const selectedModel = data.selectedModel || "ModelA";
@@ -98,20 +97,21 @@ const sendEmailForAnalysis = async (emailContent) => {
 };
 
 // Function to parse the model's response
-const parseModelResponse = (htmlString) => {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(htmlString, "text/html");
-  const loginDiv = doc.querySelector(".login");
-  const result = loginDiv.textContent.trim();
-  const cleanResult = result
-    .split("\n")
-    .slice(10)
-    .map((k) => k.trim());
-  return cleanResult;
-};
+//TODO add when backend turns on
+// const parseModelResponse = (htmlString) => {
+//   const parser = new DOMParser();
+//   const doc = parser.parseFromString(htmlString, "text/html");
+//   const loginDiv = doc.querySelector(".login");
+//   const result = loginDiv.textContent.trim();
+//   const cleanResult = result
+//     .split("\n")
+//     .slice(10)
+//     .map((k) => k.trim());
+//   return cleanResult;
+// };
 
 // Function to classify email based on predictions
-const classifyEmail = (predictions) => {
+export const classifyEmail = (predictions) => {
   // let phishingCount = 0;
   // let phishingCountWithCertainty = 0;
   // let safeCountWithCertainty = 0;
@@ -159,9 +159,12 @@ const classifyEmail = (predictions) => {
 };
 
 // Function to add phishing detection button to the UI
-const addButtonToInterface = () => {
+export const addButtonToInterface = () => {
   const sortContainer = document.querySelector("td.c2");
-  if (!sortContainer) return;
+  if (!sortContainer) {
+    console.log("Sort container not found");
+    return;
+  }
 
   const sortButton = document.createElement("button");
   sortButton.textContent = "Phishing Risk?";
@@ -174,29 +177,30 @@ const addButtonToInterface = () => {
   );
   sortButton.style.borderRadius = " 4px 0 0 4px";
   sortButton.classList.add("phishing");
-
-  const resultButton = createResultButton();
-
   sortContainer.appendChild(sortButton);
 
   sortButton.addEventListener("click", async () => {
     const emailContent = readEmailContent();
     const loadingButton = createLoadingButton();
     sortContainer.appendChild(loadingButton);
-    console.log("promise");
-    const data = await sendEmailForAnalysis(emailContent);
-    if (data) {
-      loadingButton.remove();
-      // const parsed = parseModelResponse(data);
-      const consensus = classifyEmail(data);
-      displayResultButton(sortContainer, resultButton, consensus);
+    const resultButton = createResultButton();
+    sortContainer.appendChild(resultButton);
+    try {
+      const data = await sendEmailForAnalysis(emailContent);
+      if (data) {
+        loadingButton.remove();
+        const consensus = classifyEmail(data);
+        displayResultButton(sortContainer, resultButton, consensus);
+      }
+    } catch (error) {
+      console.error("Error during analysis:", error);
     }
   });
 };
 
 // Function to observe changes in the DOM
 let found = false;
-const observeDOM = () => {
+export const observeDOM = () => {
   const targetNode = document.body;
   const config = { childList: true, subtree: true };
   const callback = (mutationsList) => {
@@ -226,7 +230,7 @@ const styleButton = (button, backgroundColor, color, padding, fontSize) => {
   button.style.cursor = "pointer";
 };
 
-const createResultButton = () => {
+export const createResultButton = () => {
   const resultButton = document.createElement("button");
   resultButton.id = "resultButton";
   styleButton(
@@ -245,8 +249,9 @@ const createResultButton = () => {
   return resultButton;
 };
 
-const createLoadingButton = () => {
+export const createLoadingButton = () => {
   const loadingButton = document.createElement("button");
+  loadingButton.id = "loadingButton";
   loadingButton.style.border = "none";
   loadingButton.style.borderRadius = "0px";
   loadingButton.style.backgroundColor = "#00000000";
@@ -259,8 +264,7 @@ const createLoadingButton = () => {
   return loadingButton;
 };
 
-const displayResultButton = (container, button, consensus) => {
-  console.log("adding result button");
+export const displayResultButton = (container, button, consensus) => {
   if (consensus.classification === "Danger") {
     console.log("Danger");
     button.textContent = `High, Risk estimate: ${consensus.averageCertainty.toPrecision(
@@ -286,13 +290,3 @@ const displayResultButton = (container, button, consensus) => {
 
 addKeyframesToDOM();
 observeDOM();
-
-module.exports = {
-  isEmailOnScreen,
-  readEmailContent,
-  classifyEmail,
-  createResultButton,
-  createLoadingButton,
-  parseModelResponse,
-  sendEmailForAnalysis,
-};
