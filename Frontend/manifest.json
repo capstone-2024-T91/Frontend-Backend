@@ -1,13 +1,10 @@
 {
   "name": "Phishing Email Reader",
   "version": "1.0.0",
-  "description": "This is an extension to read your email andd determine wheather its fishing or not",
+  "description": "This extension reads your email and determines whether it's phishing or not.",
   "manifest_version": 3,
-  "permissions": [
-    "activeTab", 
-    "storage",
-    "https://3.14.250.99/"
-  ],
+  "permissions": ["activeTab", "storage"],
+  "host_permissions": ["https://3.14.250.99/*"],
   "icons": {
     "32": "./media/icon32.png",
     "64": "./media/icon64.png",
@@ -19,7 +16,6 @@
       "js": ["popup.js"]
     }
   ],
-
   "author": "Groupe 30",
   "action": {
     "default_popup": "popup.html",
