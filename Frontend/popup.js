@@ -54,112 +54,69 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // Function to check if an email is displayed on the screen
-export const isEmailOnScreen = () => {
+const isEmailOnScreen = () => {
   return document.querySelector("td.c2") !== null;
 };
 
 // Function to read the email content
-export const readEmailContent = () => {
-  return document.querySelector(".a3s").textContent;
+const readEmailContent = () => {
+  return parseContent(document.querySelector(".a3s").textContent);
+};
+
+const parseContent = (emailContent) => {
+  console.log(emailContent);
+  var cleanedText = emailContent.replace(/\s+/g, " ").trim();
+  console.log("ISDGDYFSDFSKHDVHSVDKUHSVDKHSVDJKSVDKUSVUGDK");
+  console.log(cleanedText);
+  cleanedText = cleanedText
+    .replace(
+      /^.*?On \w{3}, \w{3} \d{1,2}, \d{4} at \d{1,2}(:\d{2})? (AM|PM).*$/s,
+      ""
+    )
+    .trim();
+  console.log("ISDGDYFSDFSKHDVHSVDKUHSVDKHSVDJKSVDKUSVUGDK");
+  console.log(cleanedText);
+  return "Works";
 };
 
 // Function to send email content to the phishing detection model
-export const sendEmailForAnalysis = async (emailContent) => {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get("selectedModel", function (data) {
-      const selectedModel = data.selectedModel || "ModelA";
-      const formData = new FormData();
-      formData.append("experience", emailContent);
-      formData.append("model", selectedModel);
-      // try {
-      //   const response = await fetch("https://3.14.250.99/", {
-      //     method: "POST",
-      //     body: formData,
-      //   });
-      //   if (!response.ok) {
-      //     throw new Error("Network response was not ok");
-      //   }
-      //   const data = await response.text();
-      //   return data;
-      // } catch (error) {
-      //   console.error("Error:", error);
-      //   return null;
-      // }
-
-      // Simulate an API response
-      // TODO change when we have model working with extension with right output
-      setTimeout(() => {
-        const result = Math.random() > 0.5 ? "phishing" : "legitimate";
-        resolve(result);
-      }, 1000);
+const sendEmailForAnalysis = async (emailContent) => {
+  try {
+    const { selectedModel = "local" } = await new Promise((resolve) =>
+      chrome.storage.sync.get("selectedModel", resolve)
+    );
+    const params = new URLSearchParams({
+      email_text: emailContent,
+      model_option: selectedModel,
     });
-  });
+    const response = await fetch(
+      `https://g30.xyz/detect_phishing?${params.toString()}`,
+      {
+        method: "GET",
+      }
+    );
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+    const data = await response.text();
+    return data;
+  } catch (error) {
+    console.error("Error:", error);
+    return null;
+  }
 };
 
-// Function to parse the model's response
-//TODO add when backend turns on
-// const parseModelResponse = (htmlString) => {
-//   const parser = new DOMParser();
-//   const doc = parser.parseFromString(htmlString, "text/html");
-//   const loginDiv = doc.querySelector(".login");
-//   const result = loginDiv.textContent.trim();
-//   const cleanResult = result
-//     .split("\n")
-//     .slice(10)
-//     .map((k) => k.trim());
-//   return cleanResult;
-// };
-
 // Function to classify email based on predictions
-export const classifyEmail = (predictions) => {
-  // let phishingCount = 0;
-  // let phishingCountWithCertainty = 0;
-  // let safeCountWithCertainty = 0;
-  // let safeCertaintySum = 0;
-  // let phishingCertaintySum = 0;
-
-  // predictions.forEach((prediction) => {
-  //   const certaintyMatch = prediction.match(/Certainty: ([0-9.]+)/);
-  //   if (prediction.includes("Phishing Email")) {
-  //     phishingCount++;
-  //     if (certaintyMatch && certaintyMatch[1]) {
-  //       phishingCountWithCertainty++;
-  //       phishingCertaintySum += parseFloat(certaintyMatch[1]);
-  //     }
-  //   }
-  //   if (
-  //     prediction.includes("Safe Email") &&
-  //     certaintyMatch &&
-  //     certaintyMatch[1]
-  //   ) {
-  //     safeCountWithCertainty++;
-  //     safeCertaintySum += parseFloat(certaintyMatch[1]);
-  //   }
-  // });
-
-  // if (phishingCount === 5) {
-  //   const averageCertainty =
-  //     (phishingCertaintySum / phishingCountWithCertainty) * 100;
-  //   return { classification: "Danger", averageCertainty };
-  // } else if (phishingCount >= 3) {
-  //   const averageCertainty =
-  //     (phishingCertaintySum / phishingCountWithCertainty) * 100;
-  //   return { classification: "Moderate", averageCertainty };
-  // } else {
-  //   const averageCertainty = (safeCertaintySum / safeCountWithCertainty) * 100;
-  //   return { classification: "Safe", averageCertainty };
-  // }
-
-  // TODO change when we have model working with extension with right output
-  if (predictions === "phishing") {
-    return { classification: "Danger", averageCertainty: 80 }; // Assuming certainty is max for phishing
+const classifyEmail = (predictions) => {
+  if (predictions.prediction === "Phishing Email") {
+    return { classification: "Danger", averageCertainty: 100 }; // Assuming certainty is max for phishing
   } else {
-    return { classification: "Safe", averageCertainty: 80 }; // Assuming certainty is max for legitimate
+    return { classification: "Safe", averageCertainty: 100 }; // Assuming certainty is max for legitimate
   }
 };
 
 // Function to add phishing detection button to the UI
-export const addButtonToInterface = () => {
+const addButtonToInterface = () => {
   const sortContainer = document.querySelector("td.c2");
   if (!sortContainer) {
     console.log("Sort container not found");
@@ -200,7 +157,7 @@ export const addButtonToInterface = () => {
 
 // Function to observe changes in the DOM
 let found = false;
-export const observeDOM = () => {
+const observeDOM = () => {
   const targetNode = document.body;
   const config = { childList: true, subtree: true };
   const callback = (mutationsList) => {
@@ -230,7 +187,7 @@ const styleButton = (button, backgroundColor, color, padding, fontSize) => {
   button.style.cursor = "pointer";
 };
 
-export const createResultButton = () => {
+const createResultButton = () => {
   const resultButton = document.createElement("button");
   resultButton.id = "resultButton";
   styleButton(
@@ -249,7 +206,7 @@ export const createResultButton = () => {
   return resultButton;
 };
 
-export const createLoadingButton = () => {
+const createLoadingButton = () => {
   const loadingButton = document.createElement("button");
   loadingButton.id = "loadingButton";
   loadingButton.style.border = "none";
@@ -264,23 +221,17 @@ export const createLoadingButton = () => {
   return loadingButton;
 };
 
-export const displayResultButton = (container, button, consensus) => {
+const displayResultButton = (container, button, consensus) => {
   if (consensus.classification === "Danger") {
     console.log("Danger");
-    button.textContent = `High, Risk estimate: ${consensus.averageCertainty.toPrecision(
-      2
-    )}%`;
+    button.textContent = `Phishing Email`;
     button.style.backgroundColor = "rgb(242,28,28)";
   } else if (consensus.classification === "Moderate") {
-    button.textContent = `Moderate, Risk estimate: ${consensus.averageCertainty.toPrecision(
-      2
-    )}%`;
+    button.textContent = `Moderate`;
     button.style.backgroundColor = "rgb(242,156,28)";
   } else {
     console.log("Safe");
-    button.textContent = `Low, Safety estimate: ${consensus.averageCertainty.toPrecision(
-      2
-    )}%`;
+    button.textContent = `Safe Email`;
     button.style.backgroundColor = "rgb(7,138,68)";
   }
   container.appendChild(button);
