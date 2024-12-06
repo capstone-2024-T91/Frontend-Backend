@@ -108,15 +108,6 @@ const classifyEmail = (predictions) => {
   if (predictions.prediction === "Phishing Email") {
     return { classification: "Danger", averageCertainty: 100 };
   } else {
-    let hash = 0;
-    for (let i = 0; i < predictions.length; i++) {
-      hash = predictions.charCodeAt(i) + ((hash << 5) - hash);
-      hash = hash & hash;
-    }
-    const hashingKey = Math.abs(hash % 10) + 1;
-    if (hashingKey < 4) {
-      return { classification: "Moderate", averageCertainty: 100 };
-    }
     return { classification: "Safe", averageCertainty: 100 };
   }
 };
@@ -148,12 +139,13 @@ const addButtonToInterface = () => {
     const emailContent = readEmailContent();
     const loadingButton = createLoadingButton();
     sortContainer.appendChild(loadingButton);
-    const resultButton = createResultButton();
-    sortContainer.appendChild(resultButton);
+
     try {
       const data = await sendEmailForAnalysis(emailContent);
       if (data) {
         loadingButton.remove();
+        const resultButton = createResultButton();
+        sortContainer.appendChild(resultButton);
         const consensus = classifyEmail(data);
         displayResultButton(sortContainer, resultButton, consensus);
       }
