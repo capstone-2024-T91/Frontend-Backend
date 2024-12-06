@@ -105,6 +105,9 @@ const sendEmailForAnalysis = async (emailContent) => {
 
 // Function to classify email based on predictions
 const classifyEmail = (predictions) => {
+  console.log('this is the ', predictions);
+  console.log('this is the ', predictions.prediction == "Phishing Email");
+  console.log('hello');
   if (predictions.prediction === "Phishing Email") {
     return { classification: "Danger", averageCertainty: 100 };
   } else {
@@ -146,7 +149,7 @@ const addButtonToInterface = () => {
         loadingButton.remove();
         const resultButton = createResultButton();
         sortContainer.appendChild(resultButton);
-        const consensus = classifyEmail(data);
+        const consensus = classifyEmail(JSON.parse(data));
         displayResultButton(sortContainer, resultButton, consensus);
       }
     } catch (error) {
@@ -224,6 +227,7 @@ const createLoadingButton = () => {
 };
 
 const displayResultButton = (container, button, consensus) => {
+  console.log(consensus.classification)
   if (consensus.classification === "Danger") {
     console.log("Danger");
     button.textContent = `Caution`;
@@ -232,7 +236,6 @@ const displayResultButton = (container, button, consensus) => {
     button.textContent = `Moderate`;
     button.style.backgroundColor = "rgb(242,156,28)";
   } else {
-    console.log("Safe");
     button.textContent = `Safe`;
     button.style.backgroundColor = "rgb(7,138,68)";
   }
