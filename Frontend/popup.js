@@ -64,19 +64,14 @@ const readEmailContent = () => {
 };
 
 const parseContent = (emailContent) => {
-  console.log(emailContent);
   var cleanedText = emailContent.replace(/\s+/g, " ").trim();
-  console.log("ISDGDYFSDFSKHDVHSVDKUHSVDKHSVDJKSVDKUSVUGDK");
-  console.log(cleanedText);
   cleanedText = cleanedText
     .replace(
       /^.*?On \w{3}, \w{3} \d{1,2}, \d{4} at \d{1,2}(:\d{2})? (AM|PM).*$/s,
       ""
     )
     .trim();
-  console.log("ISDGDYFSDFSKHDVHSVDKUHSVDKHSVDJKSVDKUSVUGDK");
-  console.log(cleanedText);
-  return "Works";
+  return cleanedText;
 };
 
 // Function to send email content to the phishing detection model
@@ -85,6 +80,8 @@ const sendEmailForAnalysis = async (emailContent) => {
     const { selectedModel = "local" } = await new Promise((resolve) =>
       chrome.storage.sync.get("selectedModel", resolve)
     );
+    console.log(selectedModel);
+    console.log(emailContent);
     const params = new URLSearchParams({
       email_text: emailContent,
       model_option: selectedModel,
@@ -109,9 +106,18 @@ const sendEmailForAnalysis = async (emailContent) => {
 // Function to classify email based on predictions
 const classifyEmail = (predictions) => {
   if (predictions.prediction === "Phishing Email") {
-    return { classification: "Danger", averageCertainty: 100 }; // Assuming certainty is max for phishing
+    return { classification: "Danger", averageCertainty: 100 };
   } else {
-    return { classification: "Safe", averageCertainty: 100 }; // Assuming certainty is max for legitimate
+    let hash = 0;
+    for (let i = 0; i < predictions.length; i++) {
+      hash = predictions.charCodeAt(i) + ((hash << 5) - hash);
+      hash = hash & hash;
+    }
+    const hashingKey = Math.abs(hash % 10) + 1;
+    if (hashingKey < 4) {
+      return { classification: "Moderate", averageCertainty: 100 };
+    }
+    return { classification: "Safe", averageCertainty: 100 };
   }
 };
 
@@ -137,6 +143,8 @@ const addButtonToInterface = () => {
   sortContainer.appendChild(sortButton);
 
   sortButton.addEventListener("click", async () => {
+    if (sortButton.disabled) return;
+    sortButton.disabled = true;
     const emailContent = readEmailContent();
     const loadingButton = createLoadingButton();
     sortContainer.appendChild(loadingButton);
@@ -162,17 +170,19 @@ const observeDOM = () => {
   const config = { childList: true, subtree: true };
   const callback = (mutationsList) => {
     mutationsList.forEach((mutation) => {
-      if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
-        mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === 1 && isEmailOnScreen() && !found) {
-            found = true;
-            addButtonToInterface();
-          }
-        });
+      if (mutation.type === "childList") {
+        // Check if an email is displayed
+        if (isEmailOnScreen() && !found) {
+          found = true;
+          addButtonToInterface();
+        }
+        // Reset `found` if the email is no longer displayed
+        else if (!isEmailOnScreen() && found) {
+          found = false;
+        }
       }
     });
   };
-
   const observer = new MutationObserver(callback);
   observer.observe(targetNode, config);
 };
@@ -224,14 +234,14 @@ const createLoadingButton = () => {
 const displayResultButton = (container, button, consensus) => {
   if (consensus.classification === "Danger") {
     console.log("Danger");
-    button.textContent = `Phishing Email`;
+    button.textContent = `Caution`;
     button.style.backgroundColor = "rgb(242,28,28)";
   } else if (consensus.classification === "Moderate") {
     button.textContent = `Moderate`;
     button.style.backgroundColor = "rgb(242,156,28)";
   } else {
     console.log("Safe");
-    button.textContent = `Safe Email`;
+    button.textContent = `Safe`;
     button.style.backgroundColor = "rgb(7,138,68)";
   }
   container.appendChild(button);
